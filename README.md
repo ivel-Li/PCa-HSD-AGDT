@@ -113,7 +113,11 @@ python main.py
 python main.py --config config_resnet
 python main.py --gpu cuda:1
 python main.py --seed 123                    # Override seed (default: 42)
-python main.py --config config_lsdt_base --seed 42 --seed 123  # Multi-seed runs
+
+# Multi-seed experiments: run separately with different seeds
+python main.py --seed 42
+python main.py --seed 123
+python main.py --seed 456
 ```
 
 ### Key Config (`config.py`)
