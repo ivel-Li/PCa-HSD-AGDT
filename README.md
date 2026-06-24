@@ -196,5 +196,6 @@ Evaluate cross-institutional generalization by pointing `HDF5_PATH` to the PI-CA
 ## License & Acknowledgements
 
 - MIT License
-- [SAM3](https://github.com/ivel-Li/sam3) — Foundation model for medical image segmentation
-- [PI-CAI](https://pi-cai.grand-challenge.org/) — Public benchmark
+- [PI-CAI Baseline](https://github.com/DIAGNijmegen/picai_baseline) — Public benchmark and baseline implementation
+- [SAM3](https://github.com/facebookresearch/sam3) — Foundation model for medical image segmentation
+- [PI-CAI](https://pi-cai.grand-challenge.org/) — Challenge and dataset
