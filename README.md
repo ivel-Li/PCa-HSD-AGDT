@@ -109,15 +109,11 @@ conda activate PCa-HSD
 # Default run (LSDT-Large with SAM3 mask)
 python main.py
 
-# Custom config / GPU / Seed
+# Custom config / GPU / Seed / Run tag
 python main.py --config config_resnet
 python main.py --gpu cuda:1
-python main.py --seed 123                    # Override seed (default: 42)
-
-# Multi-seed experiments: run separately with different seeds
-python main.py --seed 42
 python main.py --seed 123
-python main.py --seed 456
+python main.py --seed 42  --run seed42       # --run avoids overwriting other seeds' output
 ```
 
 ### Key Config (`config.py`)
@@ -131,6 +127,14 @@ python main.py --seed 456
 | `DATA_EXTAND` | `False` | Concatenate ADC+DWI channels |
 | `SupCon` | `False` | Supervised contrastive loss |
 | `HDF5_PATH` | `"./dataset/patients_dataset_v1.0.h5"` | Dataset path |
+| `run` | `1` | Run tag → output saved to `./run/{model_name}/{trick_num}/{run}/` |
+
+> 💡 `save_path` is computed as `f"./run/{model_name}/{trick_num}/{run}"`. When running different seeds, use `--run` to keep results separate:
+> ```bash
+> python main.py --seed 42  --run seed42
+> python main.py --seed 123 --run seed123
+> python main.py --seed 456 --run seed456
+> ```
 
 ---
 
@@ -155,23 +159,6 @@ PCa-HSD-LSDT/
 └── run/                               # Output directory
 ```
 
----
-
-## Reproducing Paper Results
-
-```bash
-python main.py                              # LSDT-Omnirad (default, seed=42)
-python main.py --config config_lsdt_base    # LSDT-Base
-python main.py --config config_omnirad_base  # Ablation: no SAM3 mask
-python main.py --config config_lsdt_t2_only  # Ablation: T2WI only
-
-# Multi-seed experiments (e.g. seeds 42, 123, 456)
-python main.py --seed 42
-python main.py --seed 123
-python main.py --seed 456
-```
-
----
 
 ## PI-CAI Benchmark
 

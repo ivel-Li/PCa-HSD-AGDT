@@ -45,6 +45,9 @@ parser.add_argument("--gpu", type=str, default=None,
                     help="Override GPU device (e.g. cuda:0, cuda:1, cpu)")
 parser.add_argument("--seed", type=int, default=None,
                     help="Override random seed (default: config.seed)")
+parser.add_argument("--run", type=str, default=None,
+                    help="Override run id (default: config.run). "
+                         "Use e.g. --run seed42 to avoid overwriting other seeds.")
 args, _ = parser.parse_known_args()
 
 # Resolve config module path
@@ -64,6 +67,9 @@ if args.gpu is not None:
 if args.seed is not None:
     config.seed = args.seed
 
+if args.run is not None:
+    config.run = args.run
+
 # Re-export all config values for backward compatibility
 model_name = config.model_name
 run = config.run
@@ -78,7 +84,9 @@ SupCon = config.SupCon
 seed = config.seed
 num_workers = config.num_workers
 HDF5_PATH = config.HDF5_PATH
-save_path = config.save_path
+
+# Recompute save_path after overrides (run, seed, etc.)
+save_path = f"./run/{model_name}/{trick_num}/{run}"
 setup_directories = config.setup_directories
 
 # ── Project modules ──────────────────────────────────────────────────
