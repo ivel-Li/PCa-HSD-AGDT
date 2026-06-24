@@ -106,19 +106,21 @@ python dataset/MaskProcess.py
 ```bash
 conda activate PCa-HSD
 
-# Default run (LSDT-Omnirad with SAM3 mask)
+# Default run (LSDT-Large with SAM3 mask)
 python main.py
 
-# Custom config / GPU
+# Custom config / GPU / Seed
 python main.py --config config_resnet
 python main.py --gpu cuda:1
+python main.py --seed 123                    # Override seed (default: 42)
+python main.py --config config_lsdt_base --seed 42 --seed 123  # Multi-seed runs
 ```
 
 ### Key Config (`config.py`)
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `model_name` | `LSDT-Omnirad` | Model architecture |
+| `model_name` | `LSDT-Large` | Model architecture |
 | `num_epochs` | 150 | Training epochs |
 | `batch_size` | 16 | Batch size |
 | `num_splits` | 5 | K-fold folds |
@@ -154,10 +156,15 @@ PCa-HSD-LSDT/
 ## Reproducing Paper Results
 
 ```bash
-python main.py                              # LSDT-Omnirad (default)
+python main.py                              # LSDT-Omnirad (default, seed=42)
 python main.py --config config_lsdt_base    # LSDT-Base
 python main.py --config config_omnirad_base  # Ablation: no SAM3 mask
 python main.py --config config_lsdt_t2_only  # Ablation: T2WI only
+
+# Multi-seed experiments (e.g. seeds 42, 123, 456)
+python main.py --seed 42
+python main.py --seed 123
+python main.py --seed 456
 ```
 
 ---

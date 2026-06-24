@@ -43,6 +43,8 @@ parser.add_argument("--config", type=str, default="config",
                     help="Config module name or path (default: config)")
 parser.add_argument("--gpu", type=str, default=None,
                     help="Override GPU device (e.g. cuda:0, cuda:1, cpu)")
+parser.add_argument("--seed", type=int, default=None,
+                    help="Override random seed (default: config.seed)")
 args, _ = parser.parse_known_args()
 
 # Resolve config module path
@@ -58,6 +60,9 @@ if args.gpu is not None:
     config.device = args.gpu
     if args.gpu == "cpu":
         config.DataParallel = False
+
+if args.seed is not None:
+    config.seed = args.seed
 
 # Re-export all config values for backward compatibility
 model_name = config.model_name
