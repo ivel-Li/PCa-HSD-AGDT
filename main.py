@@ -70,6 +70,10 @@ if args.seed is not None:
 if args.run is not None:
     config.run = args.run
 
+# Recompute save_path after overrides and update config so
+# config.setup_directories() uses the correct path.
+config.save_path = f"./run/{config.model_name}/{config.trick_num}/{config.run}"
+
 # Re-export all config values for backward compatibility
 model_name = config.model_name
 run = config.run
@@ -84,9 +88,7 @@ SupCon = config.SupCon
 seed = config.seed
 num_workers = config.num_workers
 HDF5_PATH = config.HDF5_PATH
-
-# Recompute save_path after overrides (run, seed, etc.)
-save_path = f"./run/{model_name}/{trick_num}/{run}"
+save_path = config.save_path
 setup_directories = config.setup_directories
 
 # ── Project modules ──────────────────────────────────────────────────
