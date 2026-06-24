@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environments
+.conda/
+.env/
+venv/
+
+# Data (large generated files)
+dataset/patients_dataset_v1.0.h5
+dataset/patients_dataset_v1.0_no1024.h5
+
+# Raw NIfTI volumes
+dataset/v1.0/
+dataset/v1.1/
+
+# External data symlink
+prostate_classification/
+
+# Outputs
+run/
+outputs/
+
+# Pretrained weights
+weights/
+
+# IDE
+.vscode/
+.idea/
