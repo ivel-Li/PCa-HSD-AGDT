@@ -96,6 +96,34 @@ def build_model(name):
             use_mask=True,
             fusion="cat",
         )
+    if name == "LSDTNofusion":
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=True,
+            fusion=None,
+        )
+    if name == "LSDTcatfusion":
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=True,
+            fusion="cat",
+        )
+    if name == "LSDTmeanfusion":
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=True,
+            fusion="pool",
+        )
+    if name == "LSDTcnnfusion":
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=True,
+            fusion="cnn",
+        )
     if name == "VITHugefusion":
         return VITClassifier(
             vit_name="vit_huge_patch14_224",

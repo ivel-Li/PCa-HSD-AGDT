@@ -162,17 +162,33 @@ def train(model, train_loader, criterion, optimizer, epoch, supcon_loss=None,
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Validate
+# Joint Recall for cancer classes (2, 3)
+# ──────────────────────────────────────────────────────────────────────
+def joint_recall(y_true, y_pred, positive_labels=(2, 3)):
+    """
+    Compute recall for a set of positive labels.
+    A prediction is correct if it falls into positive_labels,
+    regardless of which specific label inside that set.
+    """
+    y_true_bin = [1 if y in positive_labels else 0 for y in y_true]
+    y_pred_bin = [1 if y in positive_labels else 0 for y in y_pred]
+    return recall_score(y_true_bin, y_pred_bin)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Validate (now includes cancer joint recall)
 # ──────────────────────────────────────────────────────────────────────
 def validate(model, val_loader, criterion, supcon_loss=None, device=device):
     """
     Validate model on validation set.
-    Returns (avg_loss, accuracy_percent).
+    Returns (avg_loss, accuracy_percent, cancer_joint_recall).
     """
     model.eval()
     total_loss = 0
     correct = 0
     total = 0
+    all_labels = []
+    all_predictions = []
 
     with torch.no_grad():
         for batch in tqdm(val_loader, desc="Validation"):
@@ -192,22 +208,12 @@ def validate(model, val_loader, criterion, supcon_loss=None, device=device):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+            all_labels.extend(labels.cpu().numpy())
+            all_predictions.extend(predicted.cpu().numpy())
+
     accuracy = 100 * correct / total
-    return total_loss / len(val_loader), accuracy
-
-
-# ──────────────────────────────────────────────────────────────────────
-# Joint Recall for cancer classes (2, 3)
-# ──────────────────────────────────────────────────────────────────────
-def joint_recall(y_true, y_pred, positive_labels=(2, 3)):
-    """
-    Compute recall for a set of positive labels.
-    A prediction is correct if it falls into positive_labels,
-    regardless of which specific label inside that set.
-    """
-    y_true_bin = [1 if y in positive_labels else 0 for y in y_true]
-    y_pred_bin = [1 if y in positive_labels else 0 for y in y_pred]
-    return recall_score(y_true_bin, y_pred_bin)
+    cr = joint_recall(all_labels, all_predictions)
+    return total_loss / len(val_loader), accuracy, cr
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -253,6 +259,13 @@ def evaluate(model, data_loader, dataset_name, save_path=None,
 
     # Confusion matrix plot
     cm = confusion_matrix(all_labels, all_predictions)
+
+    # ── Save raw confusion matrix data ──────────────────────────────
+    if save_path is not None:
+        np.save(f"{save_path}_confusion_matrix.npy", cm)
+        np.savetxt(f"{save_path}_confusion_matrix.csv", cm, delimiter=",", fmt="%d")
+        print(f"Saved confusion matrix data to: {save_path}_confusion_matrix.npy/.csv")
+
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title(f'Confusion Matrix for {plt_title}')
@@ -281,5 +294,3 @@ def evaluate(model, data_loader, dataset_name, save_path=None,
     plt.close()
 
     return acc, class_acc, cancer_recall
-
-

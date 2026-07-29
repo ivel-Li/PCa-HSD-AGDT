@@ -9,8 +9,10 @@ __pycache__/
 venv/
 
 # Data (large generated files)
-dataset/patients_dataset_v1.0.h5
-dataset/patients_dataset_v1.0_no1024.h5
+dataset/*.h5
+dataset/*.log
+dataset/downloads/
+dataset/mask_img/
 
 # Raw NIfTI volumes
 dataset/v1.0/

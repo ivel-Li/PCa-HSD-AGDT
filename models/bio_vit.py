@@ -96,22 +96,17 @@ class BioVITClassifier(nn.Module):
 
         if vit_name == "Biomedclip_vit":
             embed_dim = 512
-            # Priority 1: local checkpoint
-            if vit_ckpt is not None and os.path.isfile(vit_ckpt):
-                model = torch.load(vit_ckpt, map_location=device, weights_only=False)
-                print(f"[BioVITClassifier] Loaded BiomedCLIP weights from {vit_ckpt}")
+            # Hardcoded path to BiomedCLIP visual weights
+            biomedclip_path = "/data/users/lly/projects/PCa-HSD-LSDT/weights/biomedclip_visual_full.pt"
+            if os.path.isfile(biomedclip_path):
+                model = torch.load(biomedclip_path, map_location=device, weights_only=False)
+                print(f"[BioVITClassifier] Loaded BiomedCLIP weights from {biomedclip_path}")
                 return model, embed_dim
-            # Fallback: random init + warning
-            warnings.warn(
-                f"[BioVITClassifier] BiomedCLIP checkpoint not found at {vit_ckpt}.\n"
-                f"  Falling back to random initialization. "
-                f"Download from: https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
-            )
-            # Build a default ViT-B/16 for BiomedCLIP shape compatibility
-            model = timm.create_model(
-                "vit_base_patch16_224", pretrained=False, num_classes=0, global_pool='avg'
-            )
-            return model, embed_dim
+            else:
+                raise FileNotFoundError(
+                    f"[BioVITClassifier] BiomedCLIP checkpoint not found at {biomedclip_path}.\n"
+                    f"  Please place the weights file there."
+                )
 
         elif vit_name == "Omnirad_vit":
             # Try building backbone first, then load weights

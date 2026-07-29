@@ -14,16 +14,17 @@ class MRIDataset(Dataset):
     """
     Original notebook-style MRIDataset.
     Accepts a list of patient indices (after splitting) and loads data on-the-fly.
-    Masks are loaded from 'T2_res_sam3_text_mask_0.6' by default.
+    Masks are loaded from 'T2_res_sam3_text_mask_0.6' by default (configurable via mask_key).
 
     When DATA_EXTAND=True (set in config), channels are expanded:
       - ADC channel gets concat of (ADC, ADC+DWI, T2)
     """
 
-    def __init__(self, hdf5_path, patient_indices, use_rescaled=True):
+    def __init__(self, hdf5_path, patient_indices, use_rescaled=True, mask_key='T2_res_sam3_text_mask_0.6'):
         self.hdf5_path = hdf5_path
         self.patient_indices = patient_indices
         self.use_rescaled = use_rescaled
+        self.mask_key = mask_key
         self.file = None
 
     def __len__(self):
@@ -44,10 +45,9 @@ class MRIDataset(Dataset):
             dwi = patient_group['DWI'][:]
             t2 = patient_group['T2'][:]
 
-            # Try loading mask; fallback to None if not found
-            mask_key = 'T2_res_sam3_text_mask_0.6'
-            if mask_key in patient_group:
-                mask = patient_group[mask_key][:]
+            # Try loading mask via configurable self.mask_key; fallback to None if not found
+            if self.mask_key in patient_group:
+                mask = patient_group[self.mask_key][:]
             elif 'mask_res' in patient_group:
                 mask = patient_group['mask_res'][:]
             else:

@@ -19,7 +19,7 @@ class VITClassifier(nn.Module):
         num_classes=4,
         pretrained=False,
         vit_ckpt=None,
-        use_mask=True,
+        use_mask=False,
         fusion=None,
         proj_dim=128,
         nhead=8,

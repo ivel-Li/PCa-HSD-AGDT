@@ -87,6 +87,7 @@ DATA_EXTAND = config.DATA_EXTAND
 SupCon = config.SupCon
 seed = config.seed
 num_workers = config.num_workers
+MASK_KEY = config.MASK_KEY
 HDF5_PATH = config.HDF5_PATH
 save_path = config.save_path
 setup_directories = config.setup_directories
@@ -168,8 +169,8 @@ for fold, train_idx, test_idx in build_splits(
 
     # ── Datasets & DataLoaders ────────────────────────────────────
     use_rescaled = True
-    train_dataset = MRIDataset(HDF5_PATH, train_idx, use_rescaled=use_rescaled)
-    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled)
+    train_dataset = MRIDataset(HDF5_PATH, train_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
+    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
 
     train_loader = DataLoader(
         train_dataset,
@@ -207,9 +208,9 @@ for fold, train_idx, test_idx in build_splits(
                 param.requires_grad = False
             model.mask_generator.eval()
 
-    # ── Optimizer & Loss ──────────────────────────────────────────
+        # ── Optimizer & Loss ──────────────────────────────────────────
     optimizer = optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5
+        filter(lambda p: p.requires_grad, model.parameters()), lr=config.lr
     )
     criterion = nn.CrossEntropyLoss()
     supcon_loss = SupConLoss(temperature=0.07) if SupCon else None
@@ -220,20 +221,23 @@ for fold, train_idx, test_idx in build_splits(
         "train_loss": [],
         "test_loss": [],
         "test_acc": [],
+        "test_joint_recall": [],
     }
 
     # ── Training loop ─────────────────────────────────────────────
     best_test_acc = 0.0
+    best_test_jr = 0.0
     for epoch in range(num_epochs):
         tr_loss = train(model, train_loader, criterion, optimizer, epoch,
                         supcon_loss=supcon_loss, device=device)
-        te_loss, te_acc = validate(model, test_loader, criterion,
-                                   supcon_loss=supcon_loss, device=device)
+        te_loss, te_acc, te_jr = validate(model, test_loader, criterion,
+                                          supcon_loss=supcon_loss, device=device)
 
         logs["epoch"].append(epoch)
         logs["train_loss"].append(tr_loss)
         logs["test_loss"].append(te_loss)
         logs["test_acc"].append(te_acc)
+        logs["test_joint_recall"].append(te_jr)
 
         current_lr = optimizer.param_groups[0]["lr"]
         print(
@@ -241,6 +245,7 @@ for fold, train_idx, test_idx in build_splits(
             f"Train Loss: {tr_loss:.4f}  "
             f"Test Loss:  {te_loss:.4f}  "
             f"Test Acc:   {te_acc:.2f}%  "
+            f"Test JR:    {te_jr:.4f}  "
             f"LR: {current_lr:.2e}"
         )
 
@@ -252,14 +257,15 @@ for fold, train_idx, test_idx in build_splits(
             )
             print(f"  → Saved snapshot at epoch {epoch+1}")
 
-        # Save best model
-        if te_acc >= best_test_acc:
+        # Save best model (prefer higher joint recall if acc tied)
+        if te_acc > best_test_acc or (te_acc == best_test_acc and te_jr > best_test_jr):
             best_test_acc = te_acc
+            best_test_jr = te_jr
             torch.save(
                 get_state_dict_for_saving(model),
                 f"{save_path}/fold_{fold}/{run}_best_model.pth",
             )
-            print(f"  → Saved best model (acc={te_acc:.2f}%)")
+            print(f"  → Saved best model (acc={te_acc:.2f}%, jr={te_jr:.4f})")
 
     # Save training log
     log_path = f"{save_path}/fold_{fold}/{run}_training_log.json"
@@ -289,7 +295,7 @@ for fold, train_idx, test_idx in build_splits(
     test_labels = labels_all[test_idx]
 
     use_rescaled = True
-    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled)
+    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
