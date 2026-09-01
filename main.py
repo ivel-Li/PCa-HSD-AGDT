@@ -2,7 +2,7 @@
 """
 Main entry point for AGDT training + evaluation.
 
-Mirrors the full pipeline from SWIN-Split.ipynb:
+Runs the complete training and evaluation pipeline:
   1. Load HDF5 dataset, read labels
   2. K-fold stratified split
   3. Per-fold: train → validate → save best model
@@ -10,19 +10,17 @@ Mirrors the full pipeline from SWIN-Split.ipynb:
   5. Plot training curves (loss + accuracy)
 
 Usage:
-    python main.py                                    # use default config.py
-    python main.py --config config                    # same as above
-    python main.py --config config_resnet             # use config_resnet.py
-    python main.py --config /path/to/custom_config.py # absolute/relative path
-    python main.py --gpu cuda:1                       # override GPU device
-    python main.py --gpu cpu                          # run on CPU
+    python main.py                              # current AGDT config
+    python main.py --config configs/no_mask     # no-mask ablation
+    python main.py --config configs/vit_base    # ViT-Base ablation
+    python main.py --gpu cuda:1                 # override GPU device
+    python main.py --gpu cpu                    # run on CPU
 """
 
 import os
-import sys
 import json
 import argparse
-import importlib.util
+import importlib
 import numpy as np
 import h5py
 import torch
@@ -77,8 +75,7 @@ if args.run is not None:
 if args.data_parallel:
     config.DataParallel = True
 
-# Recompute save_path after overrides and update config so
-# config.setup_directories() uses the correct path.
+# Recompute the output path after CLI overrides.
 config.save_path = f"./run/{config.model_name}/{config.trick_num}/{config.run}"
 
 # Re-export all config values for backward compatibility
@@ -98,7 +95,6 @@ MASK_KEY = config.MASK_KEY
 LOAD_MASK = getattr(config, "LOAD_MASK", True)
 HDF5_PATH = config.HDF5_PATH
 save_path = config.save_path
-setup_directories = config.setup_directories
 
 if args.fold is not None and not 0 <= args.fold < num_splits:
     parser.error(f"--fold must be between 0 and {num_splits - 1}")
@@ -118,11 +114,18 @@ from train import (
 from utils.losses import SupConLoss
 
 
+def setup_directories(base_path, folds):
+    """Create the run directory and one output directory per fold."""
+    os.makedirs(base_path, exist_ok=True)
+    for fold in range(folds):
+        os.makedirs(os.path.join(base_path, f"fold_{fold}"), exist_ok=True)
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # 1.  Setup
 # ═══════════════════════════════════════════════════════════════════════
 seed_everything(seed)
-setup_directories()
+setup_directories(save_path, num_splits)
 
 g = torch.Generator()
 g.manual_seed(seed)

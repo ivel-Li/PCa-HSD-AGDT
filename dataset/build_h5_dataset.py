@@ -22,6 +22,7 @@ build_h5_dataset.py
 """
 
 import os
+from pathlib import Path
 import numpy as np
 import SimpleITK as sitk
 from skimage import transform
@@ -33,8 +34,9 @@ import gc
 
 
 # ---------- 配置区 ----------
-DATA_ROOT = "/data/users/lly/projects/PCa-HSD-LSDT/dataset/v1.0"  # 原始 NIfTI 路径
-OUTPUT_H5 = "patients_dataset_v1.0.h5"  # 输出 h5 文件
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = str(PROJECT_ROOT / "dataset" / "v1.0")  # 原始 NIfTI 路径
+OUTPUT_H5 = str(PROJECT_ROOT / "dataset" / "patients_dataset_v1.0.h5")
 MODALITIES = ["DWI", "ADC", "T2"]       # 所需模态（脚本在 patient dir 下查找 <MODALITY>.nii/.nii.gz）
 MID_SLICES = 16                         # 每个模态取的中间切片数
 TARGET_SIZE = (224, 224)                # 重采样目标尺寸 HxW

@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd -- "$script_dir/.." && pwd)"
 python_bin="${PYTHON_BIN:-/data/users/lly/.conda/envs/picai/bin/python}"
-config_name="config_agdt"
+config_name="config"
 output_root="$project_root/run/AGDT/postmask/42"
 
 mkdir -p "$output_root/logs"

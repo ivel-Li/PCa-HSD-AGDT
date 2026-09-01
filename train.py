@@ -1,5 +1,5 @@
 """
-Training, validation, and evaluation utilities extracted from SWIN-Split.ipynb.
+Training, validation, and evaluation utilities for AGDT experiments.
 """
 
 import os

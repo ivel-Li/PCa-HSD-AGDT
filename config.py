@@ -1,10 +1,9 @@
-"""Default AGDT configuration."""
-import os
+"""Default configuration for the current AGDT model."""
 
 # ============== MODEL & Training Set =================
 model_name = "AGDT"
-run = 1  
-trick_num = 5
+trick_num = "postmask"
+run = 42
 DataParallel = False
 device = "cuda:0"
 num_epochs = 150
@@ -16,23 +15,9 @@ SupCon = False
 seed = 42
 num_workers = 4
 
-# Mask key in HDF5 dataset (change to 'post_train_mask' when using patients_dataset_postmask.h5)
+# ProstateSAM3 transition-zone/peripheral-zone union mask.
 LOAD_MASK = True
-MASK_KEY = 'T2_res_sam3_text_mask_0.6'
+MASK_KEY = "post_train_mask"
 
 # Paths (relative to project root)
-HDF5_PATH = "./dataset/patients_dataset_v1.0.h5"
-
-# Setup save path
-# 1.2 for k-fold, 1.3 for data_extand, 1.4 for contrastive learning, 1.5 for v1.0dataset
-save_path = f"./run/{model_name}/{trick_num}/{run}"
-
-
-def setup_directories():
-    """Create necessary directories if they don't exist."""
-    os.makedirs(save_path, exist_ok=True)
-    print("Directory created:", save_path)
-    for i in range(num_splits):
-        fold_dir = os.path.join(save_path, f"fold_{i}")
-        os.makedirs(fold_dir, exist_ok=True)
-        print(f"Created folder: {fold_dir}")
+HDF5_PATH = "./dataset/patients_dataset_postmask.h5"

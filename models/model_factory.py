@@ -1,5 +1,5 @@
 """
-Model factory – mirrors build_model() from the SWIN-Split.ipynb notebook.
+Model factory for AGDT, its ablations, and historical aliases.
 Maps model name strings to model class + constructor kwargs.
 
 Naming conventions:

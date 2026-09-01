@@ -1,5 +1,5 @@
 """
-Dataset splitting utilities – mirrors build_splits() from SWIN-Split.ipynb.
+Stratified dataset splitting utilities.
 """
 
 import numpy as np

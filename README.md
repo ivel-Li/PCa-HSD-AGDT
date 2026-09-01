@@ -21,7 +21,7 @@ Raw DICOM/NIfTI (T2WI, ADC, DWI)
   ├── Registration & Normalization
   │     (rigid registration ADC/DWI → T2WI; resample to isotropic; intensity norm)
   │
-  ├── HDF5 Packaging ── dataset/2Input_v1.1_no1024.ipynb
+  ├── HDF5 Packaging ── dataset/build_h5_dataset.py
   │     Extract 16 center slices → resize to 224×224 → min-max norm [0,1]
   │     ➜ dataset/patients_dataset_v1.0.h5
   │       (344 patients, each: ADC, DWI, T2, label)
@@ -43,7 +43,8 @@ Raw DICOM/NIfTI (T2WI, ADC, DWI)
 | 2 | Non-significant prostate cancer |
 | 3 | Significant prostate cancer |
 
-Two dataset versions: `patients_dataset_v1.0.h5` (344 patients) and `patients_dataset_v1.0_no1024.h5` (removed patient #1024, low quality).
+Generated HDF5/NIfTI data is intentionally excluded from Git. The preprocessing
+scripts recreate the local files under `dataset/`.
 
 ### Model Architecture
 
@@ -119,14 +120,15 @@ python dataset/generate_post_train_mask.py
 ```bash
 conda activate PCa-HSD
 
-# AGDT (recommended current model)
-python main.py --config config_agdt
-
-# Default run (AGDT with SAM3 mask)
+# AGDT with the post-trained ProstateSAM3 union mask
 python main.py
 
-# Custom config / GPU / Seed / Run tag
-python main.py --config config_resnet
+# Named ablations
+python main.py --config configs/no_mask
+python main.py --config configs/vit_base
+python main.py --config configs/medicalsam3
+
+# GPU / Seed / Run tag overrides
 python main.py --gpu cuda:1
 python main.py --seed 123
 python main.py --seed 42  --run seed42       # --run avoids overwriting other seeds' output
@@ -134,8 +136,9 @@ python main.py --seed 42  --run seed42       # --run avoids overwriting other se
 
 ### Key Config (`config.py`)
 
-Both `config.py` and `config_agdt.py` select AGDT. The dedicated AGDT config
-uses the post-trained ProstateSAM3 union mask (`post_train_mask`).
+`config.py` is the single canonical AGDT configuration. Small, named overrides
+for ablations live under `configs/`; seed, device, run tag, and fold are CLI
+arguments rather than duplicated config files.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -145,8 +148,9 @@ uses the post-trained ProstateSAM3 union mask (`post_train_mask`).
 | `num_splits` | 5 | K-fold folds |
 | `DATA_EXTAND` | `False` | Concatenate ADC+DWI channels |
 | `SupCon` | `False` | Supervised contrastive loss |
-| `HDF5_PATH` | `"./dataset/patients_dataset_v1.0.h5"` | Dataset path |
-| `run` | `1` | Run tag → output saved to `./run/{model_name}/{trick_num}/{run}/` |
+| `MASK_KEY` | `post_train_mask` | HDF5 anatomy-mask key |
+| `HDF5_PATH` | `"./dataset/patients_dataset_postmask.h5"` | Dataset path |
+| `run` | `42` | Run tag → output saved to `./run/{model_name}/{trick_num}/{run}/` |
 
 > 💡 `save_path` is computed as `f"./run/{model_name}/{trick_num}/{run}"`. When running different seeds, use `--run` to keep results separate:
 > ```bash
@@ -161,8 +165,8 @@ uses the post-trained ProstateSAM3 union mask (`post_train_mask`).
 
 ```
 PCa-HSD-LSDT/
-├── main.py / config.py / train.py     # Entry, config, training loop
-├── config_agdt.py                     # Current AGDT configuration
+├── main.py / config.py / train.py     # Entry, canonical config, training loop
+├── configs/                            # Named, minimal ablation overrides
 ├── data/
 │   ├── dataset.py                     # MRIDataset — HDF5 loader
 │   └── split.py                       # Stratified K-fold split
@@ -171,10 +175,10 @@ PCa-HSD-LSDT/
 │   ├── base.py / resnet.py / vit.py / bio_vit.py
 ├── utils/losses.py                    # SupConLoss
 ├── dataset/
-│   ├── 2Input_v1.1[_no1024].ipynb     # HDF5 builders
-│   ├── MaskProcess.py                 # SAM3 mask generation
-│   ├── patients_dataset_v1.0[_no1024].h5
-│   └── v1.0/ v1.1/                   # Raw NIfTI volumes
+│   ├── build_h5_dataset.py             # NIfTI → HDF5
+│   ├── generate_post_train_mask.py     # ProstateSAM3 union masks
+│   └── export/infer/merge scripts      # Alternative-mask evaluation
+├── tests/                              # Lightweight tests (no weight download)
 ├── weights/                           # Pretrained checkpoints
 └── run/                               # Output directory
 ```

@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd -- "$script_dir/.." && pwd)"
 python_bin="${PYTHON_BIN:-/data/users/lly/.conda/envs/picai/bin/python}"
-config_name="config_vitlarge_attention_nomask"
+config_name="configs/no_mask"
 output_root="$project_root/run/VITLargeAttentionClassifier/nomask/42"
 
 mkdir -p "$output_root/logs"

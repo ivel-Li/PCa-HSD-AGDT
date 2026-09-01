@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 *.pyo
+*.ipynb
 
 # Environments
 .conda/
@@ -25,6 +26,12 @@ prostate_classification/
 run/
 outputs/
 roi_screening_outputs/
+
+# Local exploratory analysis (not part of the reproducible pipeline)
+model_sum_post.py
+screen_lsdt_patient_slices.py
+dataset/export_patient_slice_zones.py
+dataset/render_styled_union_mask.py
 
 # Pretrained weights
 weights/
