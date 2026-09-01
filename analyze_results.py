@@ -51,7 +51,7 @@ def get_best_jr_from_log(log_path):
 
 def analyze_experiment(exp_path):
     """
-    Analyze a single experiment directory (e.g., run/LSDT-Large/5/seed42).
+    Analyze a single experiment directory (e.g., run/AGDT/postmask/seed42).
     Returns a dict with best_accs (per fold), best_jrs (per fold), mean, std, etc.
     """
     # Find all fold directories
@@ -269,8 +269,8 @@ def main(root_dir="run"):
         print("  during validation, so future runs will have it.")
         print("")
         print("  For existing runs, use utils/summarize.py to recompute:")
-        print("    python utils/summarize.py run/LSDT-Large/5/seed42")
-        print("    for d in run/LSDT-Large/5/seed*/; do python utils/summarize.py \"$d\"; done")
+        print("    python utils/summarize.py run/AGDT/postmask/seed42")
+        print("    for d in run/AGDT/postmask/seed*/; do python utils/summarize.py \"$d\"; done")
 
 
 if __name__ == "__main__":

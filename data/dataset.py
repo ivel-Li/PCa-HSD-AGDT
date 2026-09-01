@@ -20,11 +20,19 @@ class MRIDataset(Dataset):
       - ADC channel gets concat of (ADC, ADC+DWI, T2)
     """
 
-    def __init__(self, hdf5_path, patient_indices, use_rescaled=True, mask_key='T2_res_sam3_text_mask_0.6'):
+    def __init__(
+        self,
+        hdf5_path,
+        patient_indices,
+        use_rescaled=True,
+        mask_key='T2_res_sam3_text_mask_0.6',
+        load_mask=True,
+    ):
         self.hdf5_path = hdf5_path
         self.patient_indices = patient_indices
         self.use_rescaled = use_rescaled
         self.mask_key = mask_key
+        self.load_mask = load_mask
         self.file = None
 
     def __len__(self):
@@ -46,12 +54,12 @@ class MRIDataset(Dataset):
             t2 = patient_group['T2'][:]
 
             # Try loading mask via configurable self.mask_key; fallback to None if not found
-            if self.mask_key in patient_group:
-                mask = patient_group[self.mask_key][:]
-            elif 'mask_res' in patient_group:
-                mask = patient_group['mask_res'][:]
-            else:
-                mask = None
+            mask = None
+            if self.load_mask:
+                if self.mask_key in patient_group:
+                    mask = patient_group[self.mask_key][:]
+                elif 'mask_res' in patient_group:
+                    mask = patient_group['mask_res'][:]
 
             item['adc'] = torch.from_numpy(adc).float().permute(0, 3, 1, 2)
             item['dwi'] = torch.from_numpy(dwi).float().permute(0, 3, 1, 2)

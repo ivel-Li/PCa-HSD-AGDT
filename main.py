@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for PCa-HSD-LSDT training + evaluation.
+Main entry point for AGDT training + evaluation.
 
 Mirrors the full pipeline from SWIN-Split.ipynb:
   1. Load HDF5 dataset, read labels
@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # Config Loading (supports --config and --gpu)
 # ═══════════════════════════════════════════════════════════════════════
 
-parser = argparse.ArgumentParser(description="PCa-HSD-LSDT training")
+parser = argparse.ArgumentParser(description="AGDT training")
 parser.add_argument("--config", type=str, default="config",
                     help="Config module name or path (default: config)")
 parser.add_argument("--gpu", type=str, default=None,
@@ -48,6 +48,10 @@ parser.add_argument("--seed", type=int, default=None,
 parser.add_argument("--run", type=str, default=None,
                     help="Override run id (default: config.run). "
                          "Use e.g. --run seed42 to avoid overwriting other seeds.")
+parser.add_argument("--fold", type=int, default=None,
+                    help="Train/evaluate only this zero-based fold (default: all folds)")
+parser.add_argument("--data-parallel", action="store_true",
+                    help="Use every GPU visible to this process with DataParallel")
 args, _ = parser.parse_known_args()
 
 # Resolve config module path
@@ -70,6 +74,9 @@ if args.seed is not None:
 if args.run is not None:
     config.run = args.run
 
+if args.data_parallel:
+    config.DataParallel = True
+
 # Recompute save_path after overrides and update config so
 # config.setup_directories() uses the correct path.
 config.save_path = f"./run/{config.model_name}/{config.trick_num}/{config.run}"
@@ -88,9 +95,13 @@ SupCon = config.SupCon
 seed = config.seed
 num_workers = config.num_workers
 MASK_KEY = config.MASK_KEY
+LOAD_MASK = getattr(config, "LOAD_MASK", True)
 HDF5_PATH = config.HDF5_PATH
 save_path = config.save_path
 setup_directories = config.setup_directories
+
+if args.fold is not None and not 0 <= args.fold < num_splits:
+    parser.error(f"--fold must be between 0 and {num_splits - 1}")
 
 # ── Project modules ──────────────────────────────────────────────────
 from data.dataset import MRIDataset
@@ -122,6 +133,8 @@ print(f"Save path: {save_path}")
 print(f"Device: {device}")
 print(f"DataParallel: {DataParallel}")
 print(f"SupCon: {SupCon}")
+print(f"Load mask: {LOAD_MASK}")
+print(f"Selected fold: {args.fold if args.fold is not None else 'all'}")
 
 # ═══════════════════════════════════════════════════════════════════════
 # 2.  Load HDF5 dataset
@@ -152,6 +165,9 @@ best_overall_acc = 0.0
 for fold, train_idx, test_idx in build_splits(
     selected_indices, labels_selected, num_splits=num_splits, seed=seed
 ):
+    if args.fold is not None and fold != args.fold:
+        continue
+
     print(f"\n{'='*60}")
     print(f"Fold {fold}")
     print(f"{'='*60}")
@@ -169,8 +185,14 @@ for fold, train_idx, test_idx in build_splits(
 
     # ── Datasets & DataLoaders ────────────────────────────────────
     use_rescaled = True
-    train_dataset = MRIDataset(HDF5_PATH, train_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
-    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
+    train_dataset = MRIDataset(
+        HDF5_PATH, train_idx, use_rescaled=use_rescaled,
+        mask_key=MASK_KEY, load_mask=LOAD_MASK,
+    )
+    test_dataset = MRIDataset(
+        HDF5_PATH, test_idx, use_rescaled=use_rescaled,
+        mask_key=MASK_KEY, load_mask=LOAD_MASK,
+    )
 
     train_loader = DataLoader(
         train_dataset,
@@ -195,7 +217,9 @@ for fold, train_idx, test_idx in build_splits(
 
     if DataParallel and torch.cuda.device_count() > 1:
         print(f"[INFO] Using DataParallel with {torch.cuda.device_count()} GPUs.")
-        model = torch.nn.DataParallel(model, device_ids=[0, 1])
+        model = torch.nn.DataParallel(
+            model, device_ids=list(range(torch.cuda.device_count()))
+        )
 
     # If MRIClassifier, freeze mask_generator
     if model_name == "MRIClassifier":
@@ -292,10 +316,16 @@ all_cancer_recall = []
 for fold, train_idx, test_idx in build_splits(
     selected_indices, labels_selected, num_splits=num_splits, seed=seed
 ):
+    if args.fold is not None and fold != args.fold:
+        continue
+
     test_labels = labels_all[test_idx]
 
     use_rescaled = True
-    test_dataset = MRIDataset(HDF5_PATH, test_idx, use_rescaled=use_rescaled, mask_key=MASK_KEY)
+    test_dataset = MRIDataset(
+        HDF5_PATH, test_idx, use_rescaled=use_rescaled,
+        mask_key=MASK_KEY, load_mask=LOAD_MASK,
+    )
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
@@ -314,7 +344,9 @@ for fold, train_idx, test_idx in build_splits(
     model = model.to(device)
 
     if DataParallel and torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model, device_ids=[0, 1])
+        model = torch.nn.DataParallel(
+            model, device_ids=list(range(torch.cuda.device_count()))
+        )
 
     plt_show = fold == 0
     acc, class_acc, cancer_recall = evaluate(
@@ -356,7 +388,8 @@ print(f"\n{'='*60}")
 print("Plotting Training Curves")
 print(f"{'='*60}")
 
-for split_index in range(num_splits):
+plot_folds = [args.fold] if args.fold is not None else range(num_splits)
+for split_index in plot_folds:
     log_path = f"{save_path}/fold_{split_index}/{run}_training_log.json"
     if not os.path.exists(log_path):
         print(f"[WARN] Log not found: {log_path}")

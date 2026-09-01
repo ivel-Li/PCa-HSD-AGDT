@@ -24,6 +24,7 @@ prostate_classification/
 # Outputs
 run/
 outputs/
+roi_screening_outputs/
 
 # Pretrained weights
 weights/

@@ -1,8 +1,8 @@
-"""Configuration for SWIN-Split project."""
+"""Default AGDT configuration."""
 import os
 
 # ============== MODEL & Training Set =================
-model_name = "LSDT-Large"
+model_name = "AGDT"
 run = 1  
 trick_num = 5
 DataParallel = False
@@ -17,6 +17,7 @@ seed = 42
 num_workers = 4
 
 # Mask key in HDF5 dataset (change to 'post_train_mask' when using patients_dataset_postmask.h5)
+LOAD_MASK = True
 MASK_KEY = 'T2_res_sam3_text_mask_0.6'
 
 # Paths (relative to project root)

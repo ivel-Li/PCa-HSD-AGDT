@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore')
 
 results = []
 for name in [
+    'AGDT', 'VITLargeAttentionClassifier',
     'LSDT-Base', 'LSDT-Swin-T', 'LSDT-Large',
     'LSDT-Omnirad', 'LSDT-BiomedCLIP', 'LSDT-ResNet50',
     'VITClassifier', 'SWINClassifier', 'VITLargeClassifier', 'ResNetClassifier',

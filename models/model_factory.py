@@ -3,6 +3,7 @@ Model factory – mirrors build_model() from the SWIN-Split.ipynb notebook.
 Maps model name strings to model class + constructor kwargs.
 
 Naming conventions:
+  - AGDT: mask-guided ViT-Large with inter-slice Transformer aggregation.
   - Original names (e.g. VITClassifier, ResNetClassifier, Omnirad_vit):
     use_mask=False, fusion=None (plain classifier).
   - LSDT-* names (e.g. LSDT-Base, LSDT-ResNet50, LSDT-Omnirad):
@@ -18,6 +19,15 @@ from .base import MRIClassifier
 def build_model(name):
     """Build a model by name."""
 
+    # LSDT-Large is retained so historical configs and checkpoints still load.
+    if name in {"AGDT", "LSDT-Large"}:
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=True,
+            fusion="transformer",
+        )
+
     # ═════════════════════════════════════════════════════════════════
     # LSDT models: use_mask=True, fusion="transformer"
     # ═════════════════════════════════════════════════════════════════
@@ -32,13 +42,6 @@ def build_model(name):
         )
     if name == "LSDT-Base":
         return VITClassifier(vit_ckpt=None, use_mask=True, fusion="transformer")
-    if name == "LSDT-Large":
-        return VITClassifier(
-            vit_name="vit_large_patch16_224",
-            vit_ckpt=None,
-            use_mask=True,
-            fusion="transformer",
-        )
     if name == "LSDT-BiomedCLIP":
         return BioVITClassifier(
             vit_name="Biomedclip_vit",
@@ -65,6 +68,13 @@ def build_model(name):
         return VITClassifier(vit_ckpt=None)
     if name == "VITLargeClassifier":
         return VITClassifier(vit_name="vit_large_patch16_224", vit_ckpt=None)
+    if name == "VITLargeAttentionClassifier":
+        return VITClassifier(
+            vit_name="vit_large_patch16_224",
+            vit_ckpt=None,
+            use_mask=False,
+            fusion="transformer",
+        )
     if name == "VITLarge21kClassifier":
         return VITClassifier(
             vit_name="vit_large_patch16_224_in21k",

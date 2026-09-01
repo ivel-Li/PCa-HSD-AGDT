@@ -4,7 +4,7 @@ generate_post_train_mask.py
 
 对于 patients_dataset_v1.0.h5 中的每个病人，读取 T2/ADC/DWI (16,224,224,1)，
 对每张切片沿通道维 stack 成 3 通道图像，分别用 prompt "transition zone"
-和 "peripheral zone" 运行 SAM3 推理，取交集为完整的前列腺 mask。
+和 "peripheral zone" 运行 SAM3 推理，取并集为完整的前列腺 mask。
 
 输出：新的 H5 文件 patients_dataset_postmask.h5（包含 v1.0 全部内容 + post_train_mask key）
 

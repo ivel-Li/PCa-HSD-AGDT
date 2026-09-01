@@ -5,11 +5,11 @@ Computes patient-level accuracy, per-class recall, and cancer joint recall.
 
 Usage:
     conda activate picai
-    python utils/summarize.py run/LSDT-Large/5/seed42
-    python utils/summarize.py run/LSDT-Large/5/seed42 --device cuda:0
+    python utils/summarize.py run/AGDT/postmask/seed42
+    python utils/summarize.py run/AGDT/postmask/seed42 --device cuda:0
 
 For multiple seeds:
-    for d in run/LSDT-Large/5/seed*/; do
+    for d in run/AGDT/postmask/seed*/; do
         python utils/summarize.py "$d"
     done
 """
@@ -223,7 +223,7 @@ def summarize(exp_path, device="cuda:0"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Re-evaluate best models")
     parser.add_argument("exp_path", type=str,
-                        help="Path to experiment folder, e.g. run/LSDT-Large/5/seed42")
+                        help="Path to experiment folder, e.g. run/AGDT/postmask/seed42")
     parser.add_argument("--device", type=str, default="cuda:0",
                         help="Device (default: cuda:0)")
     args = parser.parse_args()

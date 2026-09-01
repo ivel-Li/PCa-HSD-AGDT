@@ -1,10 +1,12 @@
-# Histopathological Spectrum-Guided Prostate Stratification via Segmentation-Assisted Diagnostic Transformer
+# AGDT: Histopathological Spectrum-Guided Prostate Stratification
 
-Official repository for the paper *"Histopathological Spectrum-Guided Prostate Stratification via Segmentation-Assisted Diagnostic Transformer"*.
+Official implementation of AGDT for four-class prostate stratification from
+multi-parametric MRI.
 
 **Contributions:**
 - **Pathology-grounded benchmark** — A four-class prostate mpMRI dataset with biopsy-confirmed labels, enabling clinically meaningful imaging–pathology research.
-- **Segmentation-assisted tri-modal 3D classification network (LSDT)** — Incorporates SAM3 foundation model priors and integrates slice sequential features from T2WI, ADC, and DWI for fine-grained classification.
+- **AGDT (current model)** — Uses text-prompted ProstateSAM3 masks to focus T2WI, ADC, and DWI on anatomically relevant prostate regions, followed by ViT-Large feature extraction and position-aware inter-slice Transformer aggregation.
+- **Controlled architecture and mask comparisons** — Supports alternative backbones, mask sources, and a no-mask ablation under the same training pipeline.
 - **Cross-institutional generalization** — Strong results on both our benchmark and the public PI-CAI dataset, suggesting clinical utility for risk stratification.
 
 > 🔗 PI-CAI baseline: [github.com/ivel-Li/picai_baseline_classification](https://github.com/ivel-Li/picai_baseline_classification)
@@ -24,9 +26,9 @@ Raw DICOM/NIfTI (T2WI, ADC, DWI)
   │     ➜ dataset/patients_dataset_v1.0.h5
   │       (344 patients, each: ADC, DWI, T2, label)
   │
-  ├── SAM3 Mask Generation ── dataset/MaskProcess.py
-  │     T2WI per slice → SAM3 text prompt "prostate" (threshold 0.6)
-  │     ➜ /<patient>/T2_res_sam3_text_mask_0.6
+  ├── ProstateSAM3 Mask Generation ── dataset/generate_post_train_mask.py
+  │     T2WI/ADC/DWI per slice → "transition zone" + "peripheral zone"
+  │     ➜ /<patient>/post_train_mask (union ROI)
   │     (SAM3 repo: https://github.com/ivel-Li/sam3)
   │
   └── Training & Evaluation ── python main.py
@@ -47,21 +49,30 @@ Two dataset versions: `patients_dataset_v1.0.h5` (344 patients) and `patients_da
 
 ![Model Architecture Overview](overview.png)
 
-*Figure 1: Language-guided Segmentation-assisted Diagnostic Transformer (LSDT).*
+*Figure 1: AGDT architecture with anatomy-aware ProstateSAM3 ROI extraction.*
 
-The LSDT framework:
+The AGDT framework:
 1. **Tri-modal input** — 16 axial slices × 3 modalities (T2WI, ADC, DWI) → (3 × 16 × 224 × 224).
-2. **SAM3 prior mask** — Binary prostate mask (16 × 224 × 224) guides attention to the ROI.
-3. **Feature extraction** — Shared backbone (ViT/Swin/ResNet/BiomedCLIP/OmniRad).
-4. **Mask-guided fusion** — Transformer/cat/CNN fusion of multi-modal features.
-5. **Slice sequential aggregation** — 16 slice features → patient-level representation.
+2. **Anatomy-guided ROI** — Text-prompted ProstateSAM3 central-gland and peripheral-zone masks are merged and applied to all modalities.
+3. **Feature extraction** — A shared ViT-Large/16 backbone extracts one feature vector per slice.
+4. **Slice sequential aggregation** — Learnable positional embeddings and a Transformer encoder model dependencies across the ordered slices.
+5. **Volume pooling** — Mean pooling produces the patient-level representation.
 6. **Classification head** — 4-class output.
 
 ---
 
 ## Supported Models
 
-### LSDT (with SAM3 mask + Transformer fusion)
+### AGDT
+
+| Name | Backbone | Mask | Slice aggregation |
+|------|----------|------|-------------------|
+| `AGDT` | ViT Large/16 | ProstateSAM3 | Transformer |
+
+`LSDT-Large` remains accepted as a backward-compatible alias for historical
+configs and checkpoints. New configs, runs, and result directories use `AGDT`.
+
+### Additional mask-guided backbones (legacy experiment names)
 
 | Name | Backbone |
 |------|----------|
@@ -72,9 +83,11 @@ The LSDT framework:
 | `LSDT-BiomedCLIP` | BiomedCLIP ViT-B/16 |
 | `LSDT-Omnirad` | OmniRad ViT-B/16 |
 
-### Standard Classifiers (no mask)
+### Standard classifiers and no-mask ablations
 
-`ResNetClassifier`, `MRIClassifier`, `VITClassifier`, `VITLargeClassifier`, `VITLarge21kClassifier`, `VITHugeClassifier`, `SWINClassifier`, `Biomedclip_vit`, `Omnirad_vit`
+`ResNetClassifier`, `MRIClassifier`, `VITClassifier`, `VITLargeClassifier`,
+`VITLargeAttentionClassifier`, `VITLarge21kClassifier`, `VITHugeClassifier`,
+`SWINClassifier`, `Biomedclip_vit`, `Omnirad_vit`
 
 > Pretrained weights go in `./weights/`; falls back to random init if absent.
 
@@ -96,9 +109,9 @@ pip install -r requirements.txt
 # ── Step C: Build HDF5 dataset ────────────────────────────
 python dataset/build_h5_dataset.py
 
-# ── Step D (optional): Generate SAM3 prostate masks ───────
+# ── Step D: Generate ProstateSAM3 anatomy masks ───────────
 # Install SAM3 for mask generation: https://github.com/facebookresearch/sam3.git
-python dataset/MaskProcess.py
+python dataset/generate_post_train_mask.py
 ```
 
 ### 2. Training & Evaluation
@@ -106,7 +119,10 @@ python dataset/MaskProcess.py
 ```bash
 conda activate PCa-HSD
 
-# Default run (LSDT-Large with SAM3 mask)
+# AGDT (recommended current model)
+python main.py --config config_agdt
+
+# Default run (AGDT with SAM3 mask)
 python main.py
 
 # Custom config / GPU / Seed / Run tag
@@ -118,9 +134,12 @@ python main.py --seed 42  --run seed42       # --run avoids overwriting other se
 
 ### Key Config (`config.py`)
 
+Both `config.py` and `config_agdt.py` select AGDT. The dedicated AGDT config
+uses the post-trained ProstateSAM3 union mask (`post_train_mask`).
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `model_name` | `LSDT-Large` | Model architecture |
+| `model_name` | `AGDT` | Model architecture |
 | `num_epochs` | 150 | Training epochs |
 | `batch_size` | 16 | Batch size |
 | `num_splits` | 5 | K-fold folds |
@@ -143,6 +162,7 @@ python main.py --seed 42  --run seed42       # --run avoids overwriting other se
 ```
 PCa-HSD-LSDT/
 ├── main.py / config.py / train.py     # Entry, config, training loop
+├── config_agdt.py                     # Current AGDT configuration
 ├── data/
 │   ├── dataset.py                     # MRIDataset — HDF5 loader
 │   └── split.py                       # Stratified K-fold split
@@ -182,7 +202,7 @@ Evaluate cross-institutional generalization by pointing `HDF5_PATH` to the PI-CA
 
 ```bibtex
 @article{yourcitation2024,
-  title={Histopathological Spectrum-Guided Prostate Stratification via Segmentation-Assisted Diagnostic Transformer},
+  title={AGDT: Histopathological Spectrum-Guided Prostate Stratification},
   author={Your Authors},
   journal={Under Review},
   year={2024}
