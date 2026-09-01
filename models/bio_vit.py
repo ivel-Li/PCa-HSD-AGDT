@@ -96,8 +96,10 @@ class BioVITClassifier(nn.Module):
 
         if vit_name == "Biomedclip_vit":
             embed_dim = 512
-            # Hardcoded path to BiomedCLIP visual weights
-            biomedclip_path = "/data/users/lly/projects/PCa-HSD-LSDT/weights/biomedclip_visual_full.pt"
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            biomedclip_path = os.path.join(
+                project_root, "weights", "biomedclip_visual_full.pt"
+            )
             if os.path.isfile(biomedclip_path):
                 model = torch.load(biomedclip_path, map_location=device, weights_only=False)
                 print(f"[BioVITClassifier] Loaded BiomedCLIP weights from {biomedclip_path}")

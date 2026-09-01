@@ -10,7 +10,7 @@ generate_post_train_mask.py
 
 用法：
     conda activate /data/shared/envs/sam3
-    python projects/PCa-HSD-LSDT/dataset/generate_post_train_mask.py
+    python dataset/generate_post_train_mask.py
 """
 
 import os

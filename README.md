@@ -164,7 +164,7 @@ arguments rather than duplicated config files.
 ## Project Structure
 
 ```
-PCa-HSD-LSDT/
+PCa-HSD-AGDT/
 ├── main.py / config.py / train.py     # Entry, canonical config, training loop
 ├── configs/                            # Named, minimal ablation overrides
 ├── data/
